@@ -7,39 +7,52 @@ import uuid
 
 class Cursor(object):
 
-    def __init__(self, cursor, q, params):
+    def __init__(self, cursor, q, params, maxlen=1000):
         self.cursor = cursor
         self.q = q
         self.params = params
         self.cls = None
         self.highest = -1
+        # We're using the deque as a cache.
+        self.deque = deque(maxlen=maxlen)
+        self.maxlen = maxlen
         def gen():
             for r in cursor:
+                self.highest += 1
+                self.deque.append(r)
                 yield r
         self._gen = gen()
 
     def __iter__(self):
         for elt in self._gen:
-            self.count += 1
             yield elt
 
     def __getitem__(self, index):
         try:
             min_idx = index.start or 0
             max_idx = index.stop
+            step = index.step
+            single = False
         except AttributeError:
+            # We were just handed one value. That's ok. Make it a slice anyway.
             min_idx = index
-            max_idx = index
+            max_idx = index + 1
+            step = 1
+            single = True
 
         if min_idx <= self.highest:
-            # Reset the generator
-            self._replay_query()
-            # Holy recursion. This should only happen once.
-            return self.__getitem__(index)
+            self.cursor.scroll(0, mode='absolute')
+            self.highest = -1
+            # TODO remove copypasta
+            def gen():
+                for r in self.cursor:
+                    self.highest += 1
+                    self.deque.append(r)
+                    yield r
+            self._gen = gen()
 
         # If there's not an off-by-one error here, I'll be amazed
         adj = self.highest + 1
-        self.highest += max_idx - self.highest
 
         try:
             return next(itertools.islice(self._gen, index - adj, index - adj + 1))
@@ -48,18 +61,6 @@ class Cursor(object):
 
     def __getattr__(self, name):
         return getattr(self.cursor, name)
-
-    def _replay_query(self):
-        # Create a new cursor
-        con = self.cursor.connection
-        cursor = con.cursor(str(uuid.uuid1()), cursor_factory=psycopg2.extras.NamedTupleCursor)
-        cursor.execute(self.q, *self.params)
-
-        # Kill the old (may be unnec.)
-        self.cursor.close()
-
-        # Replace it
-        self.__init__(cursor, self.q, self.params)
 
     # Snark
     def __len__(self):
@@ -76,6 +77,8 @@ class D(object):
 
     def __call__(self, q, *params):
         if q.upper().startswith('SELECT'):
+            # Server-side cursors are cool. Unless we know better, use them for
+            # everything.
             cursor = self.con.cursor(str(uuid.uuid1()), cursor_factory=psycopg2.extras.NamedTupleCursor)
         else:
             cursor = self.con.cursor()
