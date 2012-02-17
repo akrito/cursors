@@ -4,7 +4,7 @@ import psycopg2.extras
 import uuid
 
 
-class ListCursor(collections.Sequence, psycopg2.extras.NamedTupleCursor):
+class ListCursor(psycopg2.extras.NamedTupleCursor, collections.Sequence):
 
     def __getitem__(self, index):
         try:
