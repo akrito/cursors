@@ -61,6 +61,12 @@ class Cursor(object):
         # Replace it
         self.__init__(cursor, self.q, self.params)
 
+    # Snark
+    def __len__(self):
+        raise NotImplementedError('Have you considered "COUNT(*)"?')
+
+    def __reversed__(self):
+        raise NotImplementedError('Have you considered "ORDER BY foo DESC"?')
 
 # Database connection. Call it and you get a cursor.
 class D(object):
