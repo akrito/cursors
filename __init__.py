@@ -1,73 +1,32 @@
-import datetime
+import collections
 import psycopg2
 import psycopg2.extras
-import itertools
 import uuid
 
 
-class Cursor(object):
-
-    def __init__(self, cursor, q, params, maxlen=1000):
-        self.cursor = cursor
-        self.q = q
-        self.params = params
-        self.cls = None
-        self.highest = -1
-        # We're using the deque as a cache.
-        self.deque = deque(maxlen=maxlen)
-        self.maxlen = maxlen
-        def gen():
-            for r in cursor:
-                self.highest += 1
-                self.deque.append(r)
-                yield r
-        self._gen = gen()
-
-    def __iter__(self):
-        for elt in self._gen:
-            yield elt
+class ListCursor(collections.Sequence, psycopg2.extras.NamedTupleCursor):
 
     def __getitem__(self, index):
         try:
-            min_idx = index.start or 0
-            max_idx = index.stop
-            step = index.step
-            single = False
+            self.scroll(index.start or 0, mode='absolute')
+            return self.fetchmany(index.stop - index.start)[::index.step]
         except AttributeError:
-            # We were just handed one value. That's ok. Make it a slice anyway.
-            min_idx = index
-            max_idx = index + 1
-            step = 1
-            single = True
+            self.scroll(index, mode='absolute')
+            return self.fetchone()
 
-        if min_idx <= self.highest:
-            self.cursor.scroll(0, mode='absolute')
-            self.highest = -1
-            # TODO remove copypasta
-            def gen():
-                for r in self.cursor:
-                    self.highest += 1
-                    self.deque.append(r)
-                    yield r
-            self._gen = gen()
-
-        # If there's not an off-by-one error here, I'll be amazed
-        adj = self.highest + 1
-
-        try:
-            return next(itertools.islice(self._gen, index - adj, index - adj + 1))
-        except TypeError:
-            return list(itertools.islice(self._gen, index.start - adj, index.stop - adj, index.step))
-
-    def __getattr__(self, name):
-        return getattr(self.cursor, name)
-
-    # Snark
     def __len__(self):
-        raise NotImplementedError('Have you considered "COUNT(*)"?')
+        self.scroll(0, mode='absolute')
+        length = 0
+        for r in self:
+            length += 1
+        return length
 
-    def __reversed__(self):
-        raise NotImplementedError('Have you considered "ORDER BY foo DESC"?')
+    def __repr__(self):
+        return "ListCursor('%s')" % self.query
+
+    def __str__(self):
+        return self.__repr__()
+
 
 # Database connection. Call it and you get a cursor.
 class D(object):
@@ -79,8 +38,8 @@ class D(object):
         if q.upper().startswith('SELECT'):
             # Server-side cursors are cool. Unless we know better, use them for
             # everything.
-            cursor = self.con.cursor(str(uuid.uuid1()), cursor_factory=psycopg2.extras.NamedTupleCursor)
+            cursor = self.con.cursor(str(uuid.uuid1()), cursor_factory=ListCursor)
         else:
             cursor = self.con.cursor()
-        cursor.execute(q, *params)
-        return Cursor(cursor, q, params)
+        cursor.execute(q, params)
+        return cursor
