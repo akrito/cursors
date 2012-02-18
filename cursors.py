@@ -95,7 +95,9 @@ class SQLiteConnection(sqlite3.Connection):
             return super(SQLiteConnection, self).__call__(q, *params)
         else:
             self.use_undocumented_c_method = True
-            return self.cursor().execute(q, params)
+            cursor = self.cursor().execute(q, params)
+            self.use_undocumented_c_method = False
+            return cursor
 
     def cursor(self, factory=SQLiteCursor):
         return super(SQLiteConnection, self).cursor(factory)
