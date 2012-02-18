@@ -7,7 +7,11 @@ objects. This does that, mostly.
 Example
 =======
 
-    from cursors import D
-    d = D('bang')
-    c = d('SELECT * FROM business_business ORDER BY id')
+Cursors are sequences of named tuples. Here's how you get one:
 
+    from cursors import connect
+    connection  = connect('bang')
+    cursor = connection('SELECT * FROM business_business ORDER BY id')
+
+Since these connections and cursors are subclasses of actual connections and
+cursors, you get all those other methods for free.
