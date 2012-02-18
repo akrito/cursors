@@ -12,8 +12,8 @@ setup(
     url = 'http://github.com/akrito/cursors',
     author = 'Alex Kritikos',
     author_email = 'alex@8bitb.us',
-    description = 'Cursors takes SQL and gives you a list-ish cursor',
+    description = 'Cursors takes SQL and gives you a sequence of named tuples.',
     long_description = long_desc,
-    install_requires = ['pscyopg2'],
+    install_requires = ['psycopg2'],
     py_modules = ['cursors'],
 )
