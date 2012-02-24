@@ -67,6 +67,8 @@ class SQLiteCursor(sqlite3.Cursor,  collections.Sequence):
 
 class PostgresqlConnection(psycopg2.extensions.connection):
     
+    param = '%s'
+
     def __call__(self, q, *params):
         if q.upper().startswith('SELECT'):
             # Server-side cursors are cool. Unless we know better, use them for everything.
@@ -84,6 +86,8 @@ class PostgresqlConnection(psycopg2.extensions.connection):
 
 
 class SQLiteConnection(sqlite3.Connection):
+
+    param = '?'
 
     def __init__(self, *args, **kwargs):
         super(SQLiteConnection, self).__init__(*args, **kwargs)
