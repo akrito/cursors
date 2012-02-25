@@ -12,8 +12,9 @@ class PostgresqlCursor(NamedTupleCursor, collections.Sequence):
 
     def __getitem__(self, index):
         try:
-            self.scroll(index.start or 0, mode='absolute')
-            return self.fetchmany(index.stop - index.start)[::index.step]
+            start = index.start or 0
+            self.scroll(start, mode='absolute')
+            return self.fetchmany(index.stop - start)[::index.step]
         except AttributeError:
             self.scroll(index, mode='absolute')
             return self.fetchone()
