@@ -32,6 +32,10 @@ class PostgresqlCursor(NamedTupleCursor, collections.Sequence):
     def __str__(self):
         return self.__repr__()
 
+    def _make_nt(self):
+        return collections.namedtuple("Record", [d[0] for d in self.description or ()], rename=True)
+
+
 
 class SQLiteCursor(sqlite3.Cursor,  collections.Sequence):
 
@@ -111,13 +115,7 @@ class SQLiteConnection(sqlite3.Connection):
         return super(SQLiteConnection, self).cursor(factory)
 
     def _row_factory(self, cursor, row):
-        """
-        Usage:
-        con.row_factory = namedtuple_factory
-        """
-        # Remove any leading underscores from column names
-        fields = [col[0].lstrip('_') for col in cursor.description]
-        Row = collections.namedtuple("Row", fields)
+        Row = collections.namedtuple("Row", [col[0] for col in cursor.description], rename=True)
         return Row(*row)
 
     def tables(self):
