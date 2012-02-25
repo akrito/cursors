@@ -20,3 +20,4 @@ Bugs
 ====
 
 list(cursor) doesn't work.
+cursor[:X] doesn't work.
