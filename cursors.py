@@ -84,6 +84,9 @@ class PostgresqlConnection(psycopg2.extensions.connection):
             kwargs['name'] = name
         return super(PostgresqlConnection, self).cursor(**kwargs)
 
+    def tables(self):
+        return self('SELECT tablename FROM pg_tables')
+
 
 class SQLiteConnection(sqlite3.Connection):
 
@@ -115,6 +118,9 @@ class SQLiteConnection(sqlite3.Connection):
         fields = [col[0].lstrip('_') for col in cursor.description]
         Row = collections.namedtuple("Row", fields)
         return Row(*row)
+
+    def tables(self):
+        return self('SELECT tbl_name FROM SQLITE_MASTER')
 
 
 def connect(*args, **kwargs):
