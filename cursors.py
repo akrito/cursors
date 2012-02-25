@@ -26,6 +26,17 @@ class PostgresqlCursor(NamedTupleCursor, collections.Sequence):
             length += 1
         return length
 
+    def __iter__(self):
+        # Invoking _cursor.__iter__(self) goes to infinite recursion,
+        # so we do pagination by hand
+        self.scroll(0, mode='absolute')
+        while True:
+            recs = self.fetchmany(self.itersize)
+            if not recs:
+                return
+            for rec in recs:
+                yield rec
+
     def __repr__(self):
         return "cursors.ListCursor(%s)" % psycopg2.extensions.adapt(self.query)
 
