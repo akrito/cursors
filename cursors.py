@@ -134,7 +134,7 @@ class SQLiteConnection(sqlite3.Connection):
 
 
 def connect(*args, **kwargs):
-    engine = kwargs.get('engine', None)
+    engine = kwargs.pop('engine', None)
 
     # If no engine was specified, try to guess what to do.
     if engine is None and args:
@@ -153,5 +153,3 @@ def connect(*args, **kwargs):
     if engine in ('pg', 'postgres', 'postgresql', 'pscyopg', 'psycopg2'):
         kwargs.setdefault('connection_factory', PostgresqlConnection)
         return psycopg2.connect(*args, **kwargs)
-
-        
