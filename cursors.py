@@ -38,7 +38,7 @@ class PostgresqlCursor(NamedTupleCursor, collections.Sequence):
                 yield rec
 
     def __repr__(self):
-        return "cursors.ListCursor(%s)" % psycopg2.extensions.adapt(self.query)
+        return "cursors.PostgresqlCursor(%s)" % psycopg2.extensions.adapt(self.query)
 
     def __str__(self):
         return self.__repr__()
@@ -59,6 +59,10 @@ class SQLiteCursor(sqlite3.Cursor,  collections.Sequence):
         self.cache = []
         super(SQLiteCursor, self).__init__(*args, **kwargs)
 
+    def execute(self, q, params):
+        self.query = q # XXX This doesn't include the parameters
+        return super(SQLiteCursor, self).execute(q, params)
+
     def next(self):
         row = super(SQLiteCursor, self).next()
         self.cache.append(row)
@@ -77,6 +81,12 @@ class SQLiteCursor(sqlite3.Cursor,  collections.Sequence):
         for row in self:
             pass
         return len(self.cache)
+
+    def __repr__(self):
+        return "cursors.SQLiteCursor(%s)" % self.query
+
+    def __str__(self):
+        return self.__repr__()
 
 
 # Connections
