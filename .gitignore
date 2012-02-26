@@ -1,1 +1,4 @@
 *.egg-info
+.coverage
+cover
+.ropeproject
