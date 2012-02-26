@@ -70,7 +70,7 @@ class SQLiteCursor(sqlite3.Cursor,  collections.Sequence):
 
     def __getitem__(self, index):
         try:
-            max_idx = index.stop
+            max_idx = index.stop - 1
         except AttributeError:
             max_idx = index
         for n in xrange(max_idx - len(self.cache) + 1):
